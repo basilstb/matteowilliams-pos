@@ -1,6 +1,6 @@
 """
 Django settings for matteowilliams_project project.
-Supports local development (SQLite) and Koyeb production (PostgreSQL via Neon).
+Supports local development (SQLite) and Railway production (PostgreSQL via Neon).
 """
 
 import os
@@ -24,14 +24,14 @@ DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.environ.get(
     'ALLOWED_HOSTS',
-    'matteowilliams.org,www.matteowilliams.org,.koyeb.app,localhost,127.0.0.1'
+    'matteowilliams.org,www.matteowilliams.org,.up.railway.app,localhost,127.0.0.1'
 ).split(',')
 
 # Required for POST requests (forms, PIN login, sales) to work on custom domains
 CSRF_TRUSTED_ORIGINS = [
     'https://matteowilliams.org',
     'https://www.matteowilliams.org',
-    'https://*.koyeb.app',
+    'https://*.up.railway.app',
 ]
 
 # ─── Application definition ───────────────────────────────────────────────────
@@ -77,7 +77,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'matteowilliams_project.wsgi.application'
 
 # ─── Database ─────────────────────────────────────────────────────────────────
-# Uses PostgreSQL on Koyeb via Neon (DATABASE_URL env var), falls back to SQLite locally
+# Uses PostgreSQL on Railway/Neon (DATABASE_URL env var), falls back to SQLite locally
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 if DATABASE_URL:
