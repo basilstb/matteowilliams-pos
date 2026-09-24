@@ -1,1 +1,1 @@
-﻿web: gunicorn matteowilliams_project.wsgi:application --bind 0.0.0.0:$PORT --workers 2
+web: python manage.py migrate && python manage.py seed_data && gunicorn matteowilliams_project.wsgi:application --bind 0.0.0.0:$PORT --workers 2
