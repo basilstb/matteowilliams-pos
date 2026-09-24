@@ -22,22 +22,36 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = [h.strip() for h in os.environ.get(
-    'ALLOWED_HOSTS',
-    'matteowilliams.org,www.matteowilliams.org,mateowilliams.org,www.mateowilliams.org,.up.railway.app,localhost,127.0.0.1'
-).split(',') if h.strip()]
+ALLOWED_HOSTS = [
+    'mateowilliams.org',
+    'www.mateowilliams.org',
+    'matteowilliams.org',
+    'www.matteowilliams.org',
+    '.up.railway.app',
+    'localhost',
+    '127.0.0.1',
+]
+extra_hosts = os.environ.get('ALLOWED_HOSTS', '')
+if extra_hosts:
+    for h in extra_hosts.split(','):
+        h = h.strip()
+        if h and h not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(h)
 
 # Required for POST requests (forms, PIN login, sales) to work on custom domains
-csrf_env = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
 CSRF_TRUSTED_ORIGINS = [
-    'https://matteowilliams.org',
-    'https://www.matteowilliams.org',
     'https://mateowilliams.org',
     'https://www.mateowilliams.org',
+    'https://matteowilliams.org',
+    'https://www.matteowilliams.org',
     'https://*.up.railway.app',
 ]
-if csrf_env:
-    CSRF_TRUSTED_ORIGINS.extend([o.strip() for o in csrf_env.split(',') if o.strip()])
+extra_csrf = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
+if extra_csrf:
+    for origin in extra_csrf.split(','):
+        origin = origin.strip()
+        if origin and origin not in CSRF_TRUSTED_ORIGINS:
+            CSRF_TRUSTED_ORIGINS.append(origin)
 
 # ─── Application definition ───────────────────────────────────────────────────
 INSTALLED_APPS = [
