@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block title %}Audit Trail & Security Logs | Matteo Williams{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-6">
+
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <a href="{% url 'inventory:owner_dashboard' %}" class="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-400 hover:text-white mb-2 transition-colors">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                <span>Back to Dashboard</span>
+            </a>
+            <h1 class="text-2xl font-black text-white tracking-tight">Security & Operational Audit Trail</h1>
+            <p class="text-xs text-slate-400 mt-1">Every sale, PIN failure, debt settlement, and login is recorded with exact WAT timestamps.</p>
+        </div>
+
+        <!-- Filter Bar -->
+        <form method="GET" class="flex items-center space-x-2 text-xs">
+            <select name="action_type" onchange="this.form.submit()" class="px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none">
+                <option value="">All Action Types</option>
+                <option value="SALE_CREATED" {% if action_type == 'SALE_CREATED' %}selected{% endif %}>Sales Created</option>
+                <option value="DEBT_REPAID" {% if action_type == 'DEBT_REPAID' %}selected{% endif %}>Debt Repayments</option>
+                <option value="PIN_FAILED_ATTEMPT" {% if action_type == 'PIN_FAILED_ATTEMPT' %}selected{% endif %}>Failed PIN Attempts</option>
+                <option value="TERMINAL_SECURITY_LOCKOUT" {% if action_type == 'TERMINAL_SECURITY_LOCKOUT' %}selected{% endif %}>Terminal Lockouts</option>
+                <option value="TERMINAL_UNLOCKED" {% if action_type == 'TERMINAL_UNLOCKED' %}selected{% endif %}>Terminal Unlocked</option>
+            </select>
+
+            <select name="branch_id" onchange="this.form.submit()" class="px-3 py-2 bg-slate-900 border border-slate-700 rounded-xl text-white focus:outline-none">
+                <option value="">All Branches</option>
+                {% for b in branches %}
+                <option value="{{ b.id }}" {% if branch_id == b.id|stringformat:'i' %}selected{% endif %}>{{ b.name }}</option>
+                {% endfor %}
+            </select>
+        </form>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-3xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] font-bold border-b border-slate-800">
+                    <tr>
+                        <th class="py-4 px-5">Exact Event Timestamp (WAT)</th>
+                        <th class="py-4 px-5">Role & Actor</th>
+                        <th class="py-4 px-5">Branch Shop</th>
+                        <th class="py-4 px-5">Action Type</th>
+                        <th class="py-4 px-5">Details / Metadata</th>
+                        <th class="py-4 px-5 text-right">IP Address</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800 font-mono">
+                    {% for log in logs %}
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="py-4 px-5 text-slate-300 whitespace-nowrap">
+                            {{ log.created_at|date:"Y-m-d H:i:s" }}
+                        </td>
+                        <td class="py-4 px-5 font-sans">
+                            <span class="px-2 py-0.5 rounded text-[10px] font-bold font-mono {% if log.user_role == 'OWNER' %}bg-purple-950 text-purple-300 border border-purple-800{% elif log.user_role == 'MANAGER' %}bg-emerald-950 text-emerald-300 border border-emerald-800{% elif log.user_role == 'CASHIER' %}bg-cyan-950 text-cyan-300 border border-cyan-800{% else %}bg-slate-800 text-slate-400{% endif %}">
+                                {{ log.user_role }}
+                            </span>
+                            <span class="text-white font-medium ml-1.5">{{ log.actor_name }}</span>
+                        </td>
+                        <td class="py-4 px-5 font-sans text-slate-300">
+                            {{ log.branch.name|default:"Central Gateway" }}
+                        </td>
+                        <td class="py-4 px-5 font-bold {% if 'LOCKOUT' in log.action_type or 'FAILED' in log.action_type %}text-rose-400{% elif 'REPAID' in log.action_type %}text-amber-400{% elif 'SALE' in log.action_type %}text-emerald-400{% else %}text-slate-300{% endif %}">
+                            {{ log.action_type }}
+                        </td>
+                        <td class="py-4 px-5 font-sans text-slate-300 max-w-md">
+                            {{ log.details }}
+                        </td>
+                        <td class="py-4 px-5 text-right text-slate-500">
+                            {{ log.ip_address|default:"127.0.0.1" }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="py-12 text-center text-slate-500 font-sans">No audit events match your filter.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

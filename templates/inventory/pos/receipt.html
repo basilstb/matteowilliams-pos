@@ -1,0 +1,166 @@
+{% extends "base.html" %}
+
+{% block title %}Invoice & Receipt #{{ sale.invoice_number }} | Matteo Williams{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto px-4 py-8 w-full">
+    
+    <!-- Top Action Bar (No-Print) -->
+    <div class="flex items-center justify-between mb-6 no-print">
+        <a href="{% url 'inventory:pos_terminal' %}" class="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-400 hover:text-white transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            <span>New Sale (POS)</span>
+        </a>
+        <div class="flex items-center space-x-3">
+            {% if sale.balance_owed > 0 %}
+            <a href="{% url 'inventory:record_debt_repayment' sale.id %}" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition-all shadow-md flex items-center space-x-1.5">
+                <i data-lucide="hand-coins" class="w-4 h-4"></i>
+                <span>Record Debt Repayment</span>
+            </a>
+            {% endif %}
+            <button onclick="window.print()" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 text-xs font-bold transition-all shadow-md shadow-emerald-600/20 flex items-center space-x-1.5">
+                <i data-lucide="printer" class="w-4 h-4"></i>
+                <span>Print Official Receipt</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Official Printable Invoice Container -->
+    <div id="printable-receipt" class="bg-white text-slate-900 rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200">
+        
+        <!-- Header -->
+        <div class="text-center pb-6 border-b border-slate-200">
+            <div class="inline-block px-3 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-black uppercase tracking-widest mb-2">
+                Official Electronics Sales Invoice
+            </div>
+            <h1 class="text-2xl font-black tracking-tight text-slate-900">MATTEO WILLIAMS</h1>
+            <p class="text-xs font-bold text-emerald-700 uppercase tracking-wider mt-0.5">Electronics, Sound & Solar Power Hub</p>
+            <p class="text-[11px] text-slate-600 mt-1">Branch: <strong>{{ sale.branch.name }}</strong> ({{ sale.branch.code }})</p>
+            <p class="text-[11px] text-slate-500">{{ sale.branch.location }} • Tel: {{ sale.branch.phone|default:"+234 803 765 4321" }}</p>
+        </div>
+
+        <!-- Meta Details (Exact Timestamps) -->
+        <div class="grid grid-cols-2 gap-4 py-4 border-b border-slate-200 text-xs">
+            <div>
+                <span class="text-[10px] text-slate-400 font-bold uppercase block">Invoice Number:</span>
+                <span class="font-mono font-bold text-slate-900 text-sm">{{ sale.invoice_number }}</span>
+                <div class="mt-2">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block">Exact Event Timestamp:</span>
+                    <span class="font-mono text-slate-700 font-medium">{{ sale.created_at|date:"D, d M Y - H:i:s" }} WAT</span>
+                </div>
+            </div>
+            <div class="text-right">
+                <span class="text-[10px] text-slate-400 font-bold uppercase block">Customer Details:</span>
+                <span class="font-bold text-slate-900">{{ sale.customer_name_snapshot|default:"Walk-in Customer" }}</span>
+                {% if sale.customer_phone_snapshot %}
+                <p class="font-mono text-slate-600">{{ sale.customer_phone_snapshot }}</p>
+                {% endif %}
+                <div class="mt-2">
+                    <span class="text-[10px] text-slate-400 font-bold uppercase block">Issued By Cashier:</span>
+                    <span class="text-slate-700 font-semibold">{{ sale.cashier_name }}</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Line Items Table -->
+        <div class="py-4 border-b border-slate-200">
+            <table class="w-full text-xs">
+                <thead>
+                    <tr class="text-slate-400 uppercase text-[10px] font-bold border-b border-slate-200">
+                        <th class="text-left pb-2">Description</th>
+                        <th class="text-center pb-2">Qty</th>
+                        <th class="text-right pb-2">Rate (₦)</th>
+                        <th class="text-right pb-2">Amount (₦)</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for item in items %}
+                    <tr>
+                        <td class="py-2.5 pr-2">
+                            <span class="font-bold text-slate-800">{{ item.product.name }}</span>
+                            <span class="block text-[10px] text-slate-500 font-mono">{{ item.product.sku }} • {{ item.product.warranty_info }}</span>
+                        </td>
+                        <td class="py-2.5 text-center font-bold font-mono">{{ item.quantity }}</td>
+                        <td class="py-2.5 text-right font-mono text-slate-600">₦{{ item.unit_price|floatformat:2 }}</td>
+                        <td class="py-2.5 text-right font-bold font-mono text-slate-900">₦{{ item.subtotal|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Totals & Split Payments Breakdown -->
+        <div class="py-4 space-y-3">
+            <div class="flex justify-between items-center text-sm font-black border-b border-slate-200 pb-2">
+                <span>TOTAL BILL AMOUNT:</span>
+                <span class="text-lg font-mono text-slate-900">₦{{ sale.total_amount|floatformat:2 }}</span>
+            </div>
+
+            <!-- Payment Method Splits -->
+            <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100 space-y-2 text-xs">
+                <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 block">Payment Method Breakdown:</span>
+                {% for split in splits %}
+                <div class="flex justify-between items-center">
+                    <span class="font-semibold text-slate-700 flex items-center space-x-1.5">
+                        <span class="w-1.5 h-1.5 rounded-full {% if split.method == 'CASH' %}bg-emerald-500{% elif split.method == 'TRANSFER' %}bg-cyan-500{% elif split.method == 'POS' %}bg-indigo-500{% else %}bg-amber-500{% endif %}"></span>
+                        <span>{{ split.get_method_display }}</span>
+                        {% if split.reference_note %}
+                        <span class="text-[10px] text-slate-400 font-normal">({{ split.reference_note }})</span>
+                        {% endif %}
+                    </span>
+                    <span class="font-mono font-bold text-slate-900">₦{{ split.amount|floatformat:2 }}</span>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- Balance / Debt Status Card -->
+            <div class="p-4 rounded-2xl {% if sale.balance_owed > 0 %}bg-amber-50 border border-amber-200 text-amber-900{% else %}bg-emerald-50 border border-emerald-200 text-emerald-900{% endif %} flex items-center justify-between">
+                <div>
+                    <span class="text-[10px] font-bold uppercase tracking-wider block">Payment Status:</span>
+                    <span class="text-sm font-black">{{ sale.get_payment_status_display }}</span>
+                    {% if sale.debt_due_date and sale.balance_owed > 0 %}
+                    <p class="text-[11px] mt-0.5">Promised Repayment Due: <strong>{{ sale.debt_due_date|date:"d M Y" }}</strong></p>
+                    {% endif %}
+                </div>
+                <div class="text-right">
+                    <span class="text-[10px] font-bold uppercase tracking-wider block">Remaining Debt Balance:</span>
+                    <span class="text-lg font-mono font-black {% if sale.balance_owed > 0 %}text-amber-600{% else %}text-emerald-600{% endif %}">
+                        ₦{{ sale.balance_owed|floatformat:2 }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Debt Repayment Installments History (if any payments made later) -->
+            {% if debt_repayments %}
+            <div class="mt-4 pt-4 border-t border-slate-200">
+                <span class="text-[10px] font-black uppercase tracking-wider text-slate-500 block mb-2">Recorded Debt Repayments On This Sale:</span>
+                <div class="space-y-1.5 text-xs">
+                    {% for dr in debt_repayments %}
+                    <div class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 flex justify-between items-center font-mono">
+                        <div>
+                            <span class="font-bold text-emerald-700">+₦{{ dr.amount_paid|floatformat:2 }}</span>
+                            <span class="text-[10px] text-slate-500">via {{ dr.get_payment_method_display }} ({{ dr.receipt_number }})</span>
+                        </div>
+                        <div class="text-right text-[11px] text-slate-600">
+                            {{ dr.created_at|date:"d M Y - H:i" }}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Footer Notice & Barcode Simulation -->
+        <div class="mt-6 pt-4 border-t border-slate-200 text-center text-[10px] text-slate-500 space-y-1">
+            <p class="font-bold text-slate-700">Thank you for patronizing Matteo Williams Electronics Onitsha!</p>
+            <p>Goods sold in good condition have manufacturer warranty. Please keep this receipt safe.</p>
+            <div class="pt-2 font-mono text-slate-400">
+                * {{ sale.invoice_number }} *
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block title %}Emergency Unlock | {{ branch.name }}{% endblock %}
+
+{% block content %}
+<div class="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8 relative">
+    <div class="absolute -top-32 -left-32 w-80 h-80 bg-amber-600/15 rounded-full blur-3xl pointer-events-none"></div>
+
+    <div class="w-full max-w-md relative z-10">
+        <a href="{% url 'inventory:branch_login' branch.id %}" class="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-400 hover:text-white mb-4 transition-colors">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i>
+            <span>Back to Terminal</span>
+        </a>
+
+        <div class="bg-slate-900/90 backdrop-blur-xl border border-amber-500/40 rounded-3xl p-6 sm:p-8 shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-600"></div>
+
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <span class="text-xs font-bold uppercase tracking-wider text-amber-400">Security Override</span>
+                    <h2 class="text-xl font-bold text-white mt-0.5">Unlock {{ branch.name }}</h2>
+                    <p class="text-xs text-slate-400 mt-1">Requires Owner Master Key or Branch Manager PIN.</p>
+                </div>
+                <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                    <i data-lucide="unlock" class="w-6 h-6"></i>
+                </div>
+            </div>
+
+            {% if error_msg %}
+            <div class="mb-5 p-3.5 rounded-xl bg-rose-950/70 border border-rose-600/50 text-rose-300 text-xs flex items-center space-x-2.5">
+                <i data-lucide="shield-alert" class="w-4 h-4 text-rose-400 shrink-0"></i>
+                <span>{{ error_msg }}</span>
+            </div>
+            {% endif %}
+
+            <form method="POST" class="space-y-4">
+                {% csrf_token %}
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-2">Authorizing Authority</label>
+                    <select name="operator_title" class="w-full px-4 py-2.5 bg-slate-950/90 border border-slate-700 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        <option value="Owner">Business Owner (Master PIN / Password)</option>
+                        <option value="Manager">Branch Manager (Manager PIN)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 mb-2">Security Authorization Code / PIN</label>
+                    <input type="password" name="override_key" required autofocus
+                        class="w-full px-4 py-3 bg-slate-950/90 border border-slate-700 rounded-xl text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all"
+                        placeholder="Enter your authorization code">
+                    <p class="text-[11px] text-slate-400 mt-1.5">Entering the valid key will reset the 3-attempt counter and restore POS access immediately.</p>
+                </div>
+
+                <button type="submit" 
+                    class="w-full py-3.5 px-4 bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-400 hover:to-yellow-400 text-slate-950 font-bold text-sm rounded-xl shadow-lg shadow-amber-500/25 transition-all flex items-center justify-center space-x-2">
+                    <i data-lucide="shield-check" class="w-4 h-4"></i>
+                    <span>Authorize & Unlock Now</span>
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

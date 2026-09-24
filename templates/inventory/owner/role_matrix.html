@@ -1,0 +1,197 @@
+{% extends "base.html" %}
+
+{% block title %}Operational Boundaries & Permissions Matrix | Matteo Williams{% endblock %}
+
+{% block content %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-8">
+
+    <div class="text-center max-w-3xl mx-auto">
+        <div class="inline-flex items-center space-x-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs font-semibold text-indigo-400 mb-3">
+            <i data-lucide="shield" class="w-3.5 h-3.5"></i>
+            <span>System Governance & Security Rules</span>
+        </div>
+        <h1 class="text-3xl font-extrabold text-white tracking-tight">Role Boundaries & Permissions Matrix</h1>
+        <p class="text-slate-400 text-xs sm:text-sm mt-2">Explicit definitions of authority, operational permissions, and restrictions across Matteo Williams staff roles in Onitsha.</p>
+    </div>
+
+    <!-- 3 Tier Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- Cashier Tier -->
+        <div class="bg-slate-900/90 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4 relative overflow-hidden flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-cyan-950 text-cyan-300 border border-cyan-800">Frontline Tier</span>
+                    <i data-lucide="calculator" class="w-5 h-5 text-cyan-400"></i>
+                </div>
+                <h2 class="text-xl font-bold text-white mt-3">Cashier Role</h2>
+                <p class="text-xs text-slate-400 mt-1">Responsible for ringing up customer sales, receiving split payments, and collecting debt repayments.</p>
+
+                <div class="mt-6 space-y-4 text-xs">
+                    <!-- Allowed -->
+                    <div class="space-y-2">
+                        <span class="font-bold text-emerald-400 uppercase tracking-wider text-[11px] block">What Cashier CAN Do:</span>
+                        <div class="flex items-start space-x-2 text-slate-300">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>Ring up electronics sales at assigned branch terminal.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-300">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>Process split payments across Cash, Bank Transfer, POS & Debt.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-300">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>Accept debt repayment installments and print receipts.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-300">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>View branch available stock counts.</span>
+                        </div>
+                    </div>
+
+                    <!-- Disallowed -->
+                    <div class="space-y-2 pt-3 border-t border-slate-800">
+                        <span class="font-bold text-rose-400 uppercase tracking-wider text-[11px] block">What Cashier CANNOT Do:</span>
+                        <div class="flex items-start space-x-2 text-slate-400">
+                            <i data-lucide="x" class="w-4 h-4 text-rose-400 shrink-0 mt-0.5"></i>
+                            <span>Cannot sell below product minimum floor price.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-400">
+                            <i data-lucide="x" class="w-4 h-4 text-rose-400 shrink-0 mt-0.5"></i>
+                            <span>Cannot issue 100% credit or debt > ₦200k without Manager PIN.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-400">
+                            <i data-lucide="x" class="w-4 h-4 text-rose-400 shrink-0 mt-0.5"></i>
+                            <span>Cannot modify inventory counts without an active sale.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-400">
+                            <i data-lucide="x" class="w-4 h-4 text-rose-400 shrink-0 mt-0.5"></i>
+                            <span>Cannot unlock a 24-hour rate-limited terminal.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-400">
+                            <i data-lucide="x" class="w-4 h-4 text-rose-400 shrink-0 mt-0.5"></i>
+                            <span>Cannot view cost prices or overall owner gross profit.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-800 text-[11px] text-slate-500 font-mono">
+                Assigned: Branch Cashier PIN
+            </div>
+        </div>
+
+        <!-- Branch Manager Tier -->
+        <div class="bg-slate-900/90 border border-emerald-500/40 rounded-3xl p-6 shadow-xl space-y-4 relative overflow-hidden flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-950 text-emerald-300 border border-emerald-800">Operational Tier</span>
+                    <i data-lucide="shield-check" class="w-5 h-5 text-emerald-400"></i>
+                </div>
+                <h2 class="text-xl font-bold text-white mt-3">Branch Manager Role</h2>
+                <p class="text-xs text-slate-400 mt-1">Responsible for branch stock consignments, credit authorizations, and local terminal management.</p>
+
+                <div class="mt-6 space-y-4 text-xs">
+                    <!-- Allowed -->
+                    <div class="space-y-2">
+                        <span class="font-bold text-emerald-400 uppercase tracking-wider text-[11px] block">What Manager CAN Do:</span>
+                        <div class="flex items-start space-x-2 text-slate-300">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>All Cashier functions (POS, split payments, repayments).</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-300">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>Authorize 100% credit or high-debt transactions.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-300">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>Restock inventory when electronics consignments arrive.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-300">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>Emergency unlock branch terminal if locked by 3 failed PINs.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-300">
+                            <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>View branch daily cash drawer and transfer settlements.</span>
+                        </div>
+                    </div>
+
+                    <!-- Disallowed -->
+                    <div class="space-y-2 pt-3 border-t border-slate-800">
+                        <span class="font-bold text-rose-400 uppercase tracking-wider text-[11px] block">What Manager CANNOT Do:</span>
+                        <div class="flex items-start space-x-2 text-slate-400">
+                            <i data-lucide="x" class="w-4 h-4 text-rose-400 shrink-0 mt-0.5"></i>
+                            <span>Cannot create or delete branches in other markets.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-400">
+                            <i data-lucide="x" class="w-4 h-4 text-rose-400 shrink-0 mt-0.5"></i>
+                            <span>Cannot change the General Gateway password.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-400">
+                            <i data-lucide="x" class="w-4 h-4 text-rose-400 shrink-0 mt-0.5"></i>
+                            <span>Cannot view other branches' sensitive financial totals.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-400">
+                            <i data-lucide="x" class="w-4 h-4 text-rose-400 shrink-0 mt-0.5"></i>
+                            <span>Cannot alter audit logs.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-800 text-[11px] text-slate-500 font-mono">
+                Assigned: Branch Manager PIN
+            </div>
+        </div>
+
+        <!-- Owner Tier -->
+        <div class="bg-slate-900/90 border border-indigo-500/40 rounded-3xl p-6 shadow-xl space-y-4 relative overflow-hidden flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between">
+                    <span class="px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-950 text-indigo-300 border border-indigo-800">Executive Tier</span>
+                    <i data-lucide="crown" class="w-5 h-5 text-amber-400"></i>
+                </div>
+                <h2 class="text-xl font-bold text-white mt-3">Business Owner Role</h2>
+                <p class="text-xs text-slate-400 mt-1">Full superuser control over all 3+ Onitsha branches, financials, branch expansion, and credentials.</p>
+
+                <div class="mt-6 space-y-4 text-xs">
+                    <div class="space-y-2">
+                        <span class="font-bold text-indigo-400 uppercase tracking-wider text-[11px] block">Owner Sovereign Powers:</span>
+                        <div class="flex items-start space-x-2 text-slate-300">
+                            <i data-lucide="check-check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>Establish new branches at any Onitsha or Nigerian location.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-300">
+                            <i data-lucide="check-check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>Configure & reassign all Cashier and Manager PINs.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-300">
+                            <i data-lucide="check-check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>Set and update the General Business Gateway password.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-300">
+                            <i data-lucide="check-check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>Emergency unlock any locked terminal across the network.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-300">
+                            <i data-lucide="check-check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>Consolidated cross-branch revenue and profit analytics.</span>
+                        </div>
+                        <div class="flex items-start space-x-2 text-slate-300">
+                            <i data-lucide="check-check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                            <span>Inspect the comprehensive immutable security audit trail.</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-slate-800 text-[11px] text-slate-500 font-mono">
+                Master Owner PIN: 0000
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}

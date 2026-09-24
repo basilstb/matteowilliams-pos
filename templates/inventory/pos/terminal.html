@@ -1,0 +1,700 @@
+{% extends "base.html" %}
+
+{% block title %}POS Terminal | {{ terminal_branch.name }} | Matteo Williams{% endblock %}
+
+{% block content %}
+<div class="flex-1 flex flex-col lg:flex-row h-[calc(100vh-4rem)] overflow-hidden bg-[#070b14]">
+
+    <!-- LEFT SIDE: Product Catalog & Search (Clear Padding & High Visibility) -->
+    <div class="flex-1 flex flex-col h-full border-r border-slate-800/80 overflow-hidden">
+        
+        <!-- Top Toolbar: Branch selector, Search, Category Tabs -->
+        <div class="p-4 sm:p-5 bg-slate-900/60 backdrop-blur-md border-b border-slate-800/80 space-y-3">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                        <i data-lucide="scan-barcode" class="w-5 h-5"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h1 class="text-base sm:text-lg font-bold text-white tracking-tight">{{ terminal_branch.name }}</h1>
+                            <span class="text-xs font-mono px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold">{{ terminal_branch.code }}</span>
+                        </div>
+                        <p class="text-xs text-slate-400">POS Terminal • Click any item below to add to bill</p>
+                    </div>
+                </div>
+
+                <!-- Debtors Quick Navigation Button -->
+                <div class="flex items-center space-x-2">
+                    <a href="{% url 'inventory:debtors_list' %}" class="flex items-center space-x-2 px-3.5 py-2 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-300 border border-amber-500/40 text-xs font-bold transition-all shadow-sm">
+                        <i data-lucide="badge-dollar-sign" class="w-4 h-4 text-amber-400"></i>
+                        <span>Debtors Hub</span>
+                    </a>
+                    {% if user_role == 'OWNER' %}
+                    <!-- Branch switcher for Owner -->
+                    <select onchange="window.location.href='?branch=' + this.value" class="px-3 py-1.5 bg-slate-800 border border-slate-700 rounded-xl text-xs text-white focus:outline-none">
+                        {% for b in active_branches %}
+                        <option value="{{ b.id }}" {% if b.id == terminal_branch.id %}selected{% endif %}>{{ b.name }}</option>
+                        {% endfor %}
+                    </select>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Search Bar -->
+            <form method="GET" class="relative">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                    <i data-lucide="search" class="w-4 h-4"></i>
+                </div>
+                <input type="text" name="q" value="{{ search_q }}" placeholder="Search electronics by product name, brand (Samsung, LG, Felicity...), or SKU code..."
+                    class="w-full pl-10 pr-24 py-2.5 bg-slate-950/80 border border-slate-700/80 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
+                {% if search_q %}
+                <a href="{% url 'inventory:pos_terminal' %}" class="absolute inset-y-0 right-12 flex items-center pr-2 text-xs text-slate-400 hover:text-white">Clear</a>
+                {% endif %}
+                <button type="submit" class="absolute inset-y-1 right-1 px-3 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold rounded-lg text-xs transition-colors flex items-center space-x-1">
+                    <span>Search</span>
+                </button>
+            </form>
+
+            <!-- Category Filter Tabs -->
+            <div class="flex items-center space-x-2 overflow-x-auto pb-1 text-xs no-scrollbar">
+                <a href="?category=all{% if search_q %}&q={{ search_q }}{% endif %}"
+                    class="px-3 py-1.5 rounded-lg whitespace-nowrap font-medium transition-all {% if selected_cat == 'all' %}bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/20{% else %}bg-slate-800 text-slate-300 hover:bg-slate-700{% endif %}">
+                    All Categories
+                </a>
+                {% for cat in categories %}
+                <a href="?category={{ cat.id }}{% if search_q %}&q={{ search_q }}{% endif %}"
+                    class="px-3 py-1.5 rounded-lg whitespace-nowrap font-medium transition-all {% if selected_cat == cat.id|stringformat:'i' %}bg-emerald-500 text-slate-950 font-bold shadow-md shadow-emerald-500/20{% else %}bg-slate-800 text-slate-300 hover:bg-slate-700{% endif %}">
+                    {{ cat.name }}
+                </a>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Product Grid: Clear Padding as specifically requested -->
+        <div class="flex-1 overflow-y-auto p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 auto-rows-max">
+            {% for stock in stocks %}
+            <div class="product-card bg-slate-900/90 border border-slate-800/90 rounded-2xl p-5 flex flex-col justify-between hover:border-emerald-500/50 hover:bg-slate-900 transition-all shadow-md group relative cursor-pointer"
+                 onclick="addToCart({{ stock.product.id }}, '{{ stock.product.name|escapejs }}', {{ stock.product.selling_price }}, {{ stock.quantity }}, {{ stock.product.min_selling_price }}, '{{ stock.product.sku|escapejs }}', '{{ stock.product.unit|escapejs }}')">
+                
+                <div>
+                    <!-- Category Badge & Stock Indicator -->
+                    <div class="flex items-center justify-between mb-2.5">
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
+                            {{ stock.product.category.name }}
+                        </span>
+
+                        {% if stock.quantity > 5 %}
+                        <span class="flex items-center space-x-1 text-[11px] font-semibold text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-800/40">
+                            <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                            <span>{{ stock.quantity }} in stock</span>
+                        </span>
+                        {% elif stock.quantity > 0 %}
+                        <span class="flex items-center space-x-1 text-[11px] font-bold text-amber-400 bg-amber-950/60 px-2 py-0.5 rounded-full border border-amber-800/40 animate-pulse">
+                            <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                            <span>Low: {{ stock.quantity }} left</span>
+                        </span>
+                        {% else %}
+                        <span class="flex items-center space-x-1 text-[11px] font-bold text-rose-400 bg-rose-950/60 px-2 py-0.5 rounded-full border border-rose-800/40">
+                            <span>Out of Stock</span>
+                        </span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Product Name & Brand -->
+                    <h3 class="font-bold text-white text-base leading-snug group-hover:text-emerald-400 transition-colors line-clamp-2">
+                        {{ stock.product.name }}
+                    </h3>
+
+                    <div class="flex items-center space-x-2 text-xs text-slate-400 mt-1 font-mono">
+                        <span class="text-slate-500">SKU:</span>
+                        <span class="text-slate-300 font-semibold">{{ stock.product.sku }}</span>
+                        {% if stock.product.brand %}
+                        <span>•</span>
+                        <span class="text-cyan-400 font-sans font-medium">{{ stock.product.brand }}</span>
+                        {% endif %}
+                    </div>
+
+                    <p class="text-xs text-slate-400 mt-2 line-clamp-2">{{ stock.product.warranty_info }}</p>
+                </div>
+
+                <!-- Price & Tap Action Area -->
+                <div class="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between">
+                    <div>
+                        <span class="text-[10px] text-slate-400 block font-semibold uppercase">Selling Price</span>
+                        <span class="text-lg font-black text-white font-mono-numbers">₦{{ stock.product.selling_price|floatformat:2 }}</span>
+                    </div>
+
+                    <button type="button" 
+                        class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs flex items-center space-x-1.5 shadow-md shadow-emerald-600/20 active:scale-95 transition-all">
+                        <i data-lucide="plus" class="w-4 h-4"></i>
+                        <span>Add</span>
+                    </button>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-span-full py-16 text-center text-slate-500">
+                <i data-lucide="package-search" class="w-12 h-12 mx-auto text-slate-600 mb-3"></i>
+                <p class="text-base font-semibold text-slate-300">No electronics found matching your query.</p>
+                <p class="text-xs text-slate-500 mt-1">Try another category or clear the search bar.</p>
+            </div>
+            {% endfor %}
+        </div>
+
+    </div>
+
+    <!-- RIGHT SIDE: Cart, Split Payment Breakdown, and Checkout (Fintech Panel) -->
+    <div class="w-full lg:w-[480px] xl:w-[520px] h-full bg-slate-950 flex flex-col border-l border-slate-800/80 shadow-2xl relative">
+        
+        <!-- Cart Header -->
+        <div class="p-4 sm:p-5 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+                <div class="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                    <i data-lucide="shopping-cart" class="w-4 h-4"></i>
+                </div>
+                <div>
+                    <h2 class="text-base font-bold text-white">Current Order Bill</h2>
+                    <p class="text-[11px] text-slate-400"><span id="cart-item-count">0</span> items selected</p>
+                </div>
+            </div>
+            <button onclick="clearCart()" class="text-xs text-rose-400 hover:text-rose-300 font-medium flex items-center space-x-1">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                <span>Clear</span>
+            </button>
+        </div>
+
+        <!-- Scrollable Cart Content & Split Payment Inputs -->
+        <form id="sale-form" action="{% url 'inventory:process_sale' %}" method="POST" class="flex-1 flex flex-col overflow-hidden">
+            {% csrf_token %}
+            <input type="hidden" name="cart_json" id="cart-json-input" value="[]">
+
+            <div class="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5">
+                
+                <!-- Selected Items List -->
+                <div>
+                    <div class="flex items-center justify-between text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">
+                        <span>Items in Cart</span>
+                        <span class="text-slate-500">Price (₦)</span>
+                    </div>
+
+                    <div id="cart-items-container" class="space-y-2.5">
+                        <div id="empty-cart-msg" class="py-8 text-center text-slate-500 border border-dashed border-slate-800 rounded-2xl">
+                            <i data-lucide="shopping-bag" class="w-8 h-8 mx-auto text-slate-700 mb-2"></i>
+                            <p class="text-xs">Your cart is currently empty.</p>
+                            <p class="text-[11px] text-slate-600 mt-0.5">Click any product on the left catalog to start ringing up a sale.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Discount Block -->
+                <div class="bg-slate-900/80 border border-violet-500/30 rounded-2xl p-4 space-y-2">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-violet-300 flex items-center space-x-1.5">
+                            <i data-lucide="tag" class="w-3.5 h-3.5 text-violet-400"></i>
+                            <span>Discount / Promo</span>
+                        </span>
+                        <div class="flex items-center space-x-1 text-[10px] font-semibold">
+                            <button type="button" onclick="setDiscountMode('flat')" id="disc-btn-flat"
+                                class="px-2 py-0.5 rounded-md bg-violet-600 text-white transition-colors">₦ Flat</button>
+                            <button type="button" onclick="setDiscountMode('pct')" id="disc-btn-pct"
+                                class="px-2 py-0.5 rounded-md bg-slate-700 text-slate-300 transition-colors">% Off</button>
+                        </div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <input type="number" step="0.01" min="0" id="discount-input" name="discount_value" value="0"
+                            oninput="calculateSplits()"
+                            placeholder="0.00"
+                            class="flex-1 px-3 py-2 bg-slate-950 border border-violet-500/40 rounded-xl text-sm font-bold text-violet-200 text-right font-mono focus:outline-none focus:ring-1 focus:ring-violet-500">
+                        <input type="hidden" name="discount_mode" id="discount-mode-input" value="flat">
+                        <span id="disc-unit-label" class="text-xs text-violet-300 font-bold w-8">₦</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[11px] font-mono">
+                        <span class="text-slate-400">Discount Amount:</span>
+                        <span id="discount-display" class="font-bold text-violet-300">₦0.00</span>
+                    </div>
+                    <div class="flex items-center justify-between text-xs font-mono border-t border-slate-800 pt-2">
+                        <span class="text-slate-300 font-semibold">Net Payable After Discount:</span>
+                        <span id="net-total-display" class="font-black text-white">₦0.00</span>
+                    </div>
+                </div>
+
+                <!-- Customer Details Selection (Critical for Debtors tracking) -->
+                <div class="bg-slate-900/80 border border-slate-800 rounded-2xl p-4 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold uppercase tracking-wider text-slate-300 flex items-center space-x-1.5">
+                            <i data-lucide="user-check" class="w-3.5 h-3.5 text-cyan-400"></i>
+                            <span>Customer Information</span>
+                        </span>
+                        <span class="text-[10px] text-amber-400 font-semibold">* Required for Credit / Debt</span>
+                    </div>
+
+                    <div class="space-y-2">
+                        <!-- Select Existing Customer or Enter New -->
+                        <select id="customer-select" name="customer_id" onchange="handleCustomerSelect(this.value)"
+                            class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            <option value="walkin">-- Quick Walk-In Customer --</option>
+                            <option value="new">+ Register / Enter New Customer</option>
+                            {% for c in customers %}
+                            <option value="{{ c.id }}" data-name="{{ c.name }}" data-phone="{{ c.phone }}" data-address="{{ c.address }}">
+                                {{ c.name }} ({{ c.phone }})
+                            </option>
+                            {% endfor %}
+                        </select>
+
+                        <!-- Customer Manual Inputs (Visible when new or debt) -->
+                        <div id="customer-inputs" class="grid grid-cols-2 gap-2 pt-1">
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">Customer Full Name</label>
+                                <input type="text" id="cust-name" name="customer_name_manual" placeholder="e.g. Chief Emeka Okeke"
+                                    class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            </div>
+                            <div>
+                                <label class="text-[10px] text-slate-400 block mb-1">Phone Number (Onitsha)</label>
+                                <input type="text" id="cust-phone" name="customer_phone_manual" placeholder="e.g. 0803 123 4567"
+                                    class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            </div>
+                            <div class="col-span-2">
+                                <label class="text-[10px] text-slate-400 block mb-1">Shop / Residential Address</label>
+                                <input type="text" id="cust-address" name="customer_address_manual" placeholder="e.g. Shop 24 Emeka Offor Plaza / Line 3 Main Market"
+                                    class="w-full px-3 py-1.5 bg-slate-950 border border-slate-800 rounded-lg text-xs text-white placeholder-slate-600 focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SPLIT PAYMENT SECTION (Core Fintech Requirement) -->
+                <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 space-y-3.5">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-1.5">
+                            <i data-lucide="split" class="w-4 h-4 text-emerald-400"></i>
+                            <span class="text-xs font-bold uppercase tracking-wider text-white">Payment Method Splits</span>
+                        </div>
+                        <span class="text-[11px] font-mono font-bold text-slate-400">Total: <span id="bill-total-badge" class="text-white">₦0.00</span></span>
+                    </div>
+
+                    <!-- Fast Split Quick Buttons -->
+                    <div class="grid grid-cols-4 gap-1.5">
+                        <button type="button" onclick="setQuickPayment('cash')" class="py-1 px-2 rounded-lg bg-emerald-950 hover:bg-emerald-900 text-emerald-300 border border-emerald-800/60 text-[10px] font-bold text-center transition-colors">100% Cash</button>
+                        <button type="button" onclick="setQuickPayment('transfer')" class="py-1 px-2 rounded-lg bg-cyan-950 hover:bg-cyan-900 text-cyan-300 border border-cyan-800/60 text-[10px] font-bold text-center transition-colors">100% Transfer</button>
+                        <button type="button" onclick="setQuickPayment('pos')" class="py-1 px-2 rounded-lg bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800/60 text-[10px] font-bold text-center transition-colors">100% POS</button>
+                        <button type="button" onclick="setQuickPayment('debt')" class="py-1 px-2 rounded-lg bg-amber-950 hover:bg-amber-900 text-amber-300 border border-amber-800/60 text-[10px] font-bold text-center transition-colors">100% Credit</button>
+                    </div>
+
+                    <!-- 4 Payment Split Inputs -->
+                    <div class="space-y-2.5">
+                        <!-- 1. Cash -->
+                        <div>
+                            <div class="flex items-center justify-between text-xs mb-1">
+                                <span class="font-semibold text-emerald-400 flex items-center space-x-1">
+                                    <i data-lucide="banknote" class="w-3.5 h-3.5"></i>
+                                    <span>Cash at Counter (₦)</span>
+                                </span>
+                            </div>
+                            <input type="number" step="0.01" id="split-cash" name="split_cash" value="0.00"
+                                oninput="cashAutoFilled = false; calculateSplits()"
+                                class="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-sm font-bold text-white text-right font-mono focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                        </div>
+
+                        <!-- 2. Transfer -->
+                        <div>
+                            <div class="flex items-center justify-between text-xs mb-1">
+                                <span class="font-semibold text-cyan-400 flex items-center space-x-1">
+                                    <i data-lucide="arrow-left-right" class="w-3.5 h-3.5"></i>
+                                    <span>Bank Transfer (₦)</span>
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-5 gap-2">
+                                <input type="number" step="0.01" id="split-transfer" name="split_transfer" value="0.00" oninput="calculateSplits()"
+                                    class="col-span-3 px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-sm font-bold text-white text-right font-mono focus:outline-none focus:ring-1 focus:ring-cyan-500">
+                                <input type="text" name="transfer_ref" placeholder="Ref / Bank"
+                                    class="col-span-2 px-2.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 placeholder-slate-600 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <!-- 3. POS -->
+                        <div>
+                            <div class="flex items-center justify-between text-xs mb-1">
+                                <span class="font-semibold text-indigo-400 flex items-center space-x-1">
+                                    <i data-lucide="credit-card" class="w-3.5 h-3.5"></i>
+                                    <span>POS Terminal / Card (₦)</span>
+                                </span>
+                            </div>
+                            <div class="grid grid-cols-5 gap-2">
+                                <input type="number" step="0.01" id="split-pos" name="split_pos" value="0.00" oninput="calculateSplits()"
+                                    class="col-span-3 px-3 py-2 bg-slate-950 border border-slate-700 rounded-xl text-sm font-bold text-white text-right font-mono focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                                <input type="text" name="pos_ref" placeholder="Slip # / Terminal"
+                                    class="col-span-2 px-2.5 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 placeholder-slate-600 focus:outline-none">
+                            </div>
+                        </div>
+
+                        <!-- 4. Debt / Credit -->
+                        <div class="pt-2 border-t border-slate-800">
+                            <div class="flex items-center justify-between text-xs mb-1">
+                                <span class="font-semibold text-amber-400 flex items-center space-x-1">
+                                    <i data-lucide="alert-circle" class="w-3.5 h-3.5"></i>
+                                    <span>Credit / Debt Balance (₦)</span>
+                                </span>
+                                <span class="text-[10px] text-slate-400">Promised Date:</span>
+                            </div>
+                            <div class="grid grid-cols-5 gap-2">
+                                <input type="number" step="0.01" id="split-debt" name="split_debt" value="0.00" oninput="calculateSplits()"
+                                    class="col-span-3 px-3 py-2 bg-slate-950 border border-amber-600/50 rounded-xl text-sm font-bold text-amber-300 text-right font-mono focus:outline-none focus:ring-1 focus:ring-amber-500">
+                                <input type="date" id="debt-due-date" name="debt_due_date"
+                                    class="col-span-2 px-2 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-slate-300 focus:outline-none">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Split Balance Check Bar -->
+                    <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between text-xs font-mono">
+                        <span class="text-slate-400">Total Splits Sum:</span>
+                        <span id="splits-sum-display" class="font-bold text-white">₦0.00</span>
+                    </div>
+                    <div id="split-balance-msg" class="text-xs font-semibold text-center text-slate-400">
+                        Add items to calculate bill.
+                    </div>
+                </div>
+
+                <!-- Manager Approval (Condition: 100% Credit or large debt ringed up by cashier) -->
+                <div id="manager-approval-box" class="hidden p-4 rounded-2xl bg-amber-950/60 border border-amber-500/50 space-y-2">
+                    <div class="flex items-center space-x-2 text-amber-300 text-xs font-bold">
+                        <i data-lucide="shield-alert" class="w-4 h-4 text-amber-400"></i>
+                        <span>Manager Approval PIN Required</span>
+                    </div>
+                    <p class="text-[11px] text-slate-300">
+                        Cashier Boundary: Full credit sales (₦0 paid) or debts over ₦200,000 must be authorized with Branch Manager PIN.
+                    </p>
+                    <input type="password" name="manager_override_pin" placeholder="Enter Branch Manager PIN"
+                        class="w-full px-3 py-2 bg-slate-950 border border-amber-600/60 rounded-xl text-xs text-white text-center tracking-widest font-mono">
+                </div>
+
+                <div>
+                    <label class="text-[10px] text-slate-400 block mb-1">Optional Order Notes</label>
+                    <input type="text" name="sale_notes" placeholder="e.g. Free delivery arranged / Warranty card issued"
+                        class="w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none">
+                </div>
+
+            </div>
+
+            <!-- Bottom Checkout Actions -->
+            <div class="p-4 sm:p-5 bg-slate-900 border-t border-slate-800 space-y-3">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <span class="text-xs text-slate-400 block">Total Due (WAT Timestamped):</span>
+                        <span id="checkout-total" class="text-2xl font-black text-white font-mono-numbers">₦0.00</span>
+                    </div>
+                    <div class="text-right text-xs">
+                        <span class="text-slate-400">Paid: </span><span id="stat-paid" class="text-emerald-400 font-bold font-mono">₦0.00</span><br>
+                        <span class="text-slate-400">Debt: </span><span id="stat-debt" class="text-amber-400 font-bold font-mono">₦0.00</span>
+                    </div>
+                </div>
+
+                <button type="submit" id="submit-sale-btn" disabled
+                    class="w-full py-3.5 px-4 bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-400 hover:to-teal-400 disabled:opacity-40 disabled:cursor-not-allowed text-slate-950 font-extrabold text-sm rounded-xl shadow-lg shadow-emerald-500/20 transition-all flex items-center justify-center space-x-2">
+                    <i data-lucide="printer" class="w-4 h-4"></i>
+                    <span>Confirm Sale & Print Official Receipt</span>
+                </button>
+            </div>
+        </form>
+
+    </div>
+
+</div>
+
+<!-- Interactive POS JavaScript Logic -->
+<script>
+    let cart = [];
+    const userRole = "{{ user_role }}";
+    let cashAutoFilled = false; // true = cash was set by auto-fill (not user), stays in sync with net total
+
+    function addToCart(productId, name, price, stockQty, minPrice, sku, unit) {
+        if (stockQty <= 0) {
+            alert("This item is currently OUT OF STOCK at this branch!");
+            return;
+        }
+
+        const existing = cart.find(item => item.product_id === productId);
+        if (existing) {
+            if (existing.quantity >= stockQty) {
+                alert(`Cannot add more. Branch only has ${stockQty} ${unit} in stock.`);
+                return;
+            }
+            existing.quantity += 1;
+        } else {
+            cart.push({
+                product_id: productId,
+                name: name,
+                price: parseFloat(price),
+                quantity: 1,
+                max_stock: stockQty,
+                min_price: parseFloat(minPrice),
+                sku: sku,
+                unit: unit
+            });
+        }
+        renderCart();
+    }
+
+    function updateQuantity(productId, delta) {
+        const item = cart.find(i => i.product_id === productId);
+        if (!item) return;
+
+        item.quantity += delta;
+        if (item.quantity <= 0) {
+            cart = cart.filter(i => i.product_id !== productId);
+        } else if (item.quantity > item.max_stock) {
+            item.quantity = item.max_stock;
+            alert(`Maximum branch stock is ${item.max_stock} units.`);
+        }
+        renderCart();
+    }
+
+    function removeItem(productId) {
+        cart = cart.filter(i => i.product_id !== productId);
+        renderCart();
+    }
+
+    function clearCart() {
+        cart = [];
+        cashAutoFilled = false;
+        // Reset all splits to 0 when cart is cleared
+        document.getElementById('split-cash').value = '0.00';
+        document.getElementById('split-transfer').value = '0.00';
+        document.getElementById('split-pos').value = '0.00';
+        document.getElementById('split-debt').value = '0.00';
+        document.getElementById('discount-input').value = '0';
+        renderCart();
+    }
+
+    function formatNaira(num) {
+        return '₦' + parseFloat(num).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function renderCart() {
+        const container = document.getElementById('cart-items-container');
+        const emptyMsg = document.getElementById('empty-cart-msg');
+        const countBadge = document.getElementById('cart-item-count');
+        const jsonInput = document.getElementById('cart-json-input');
+
+        countBadge.textContent = cart.reduce((acc, i) => acc + i.quantity, 0);
+        jsonInput.value = JSON.stringify(cart);
+
+        if (cart.length === 0) {
+            container.innerHTML = `
+                <div id="empty-cart-msg" class="py-8 text-center text-slate-500 border border-dashed border-slate-800 rounded-2xl">
+                    <i data-lucide="shopping-bag" class="w-8 h-8 mx-auto text-slate-700 mb-2"></i>
+                    <p class="text-xs">Your cart is currently empty.</p>
+                    <p class="text-[11px] text-slate-600 mt-0.5">Click any product on the left catalog to start ringing up a sale.</p>
+                </div>
+            `;
+            lucide.createIcons();
+            updateTotals(0);
+            return;
+        }
+
+        let html = '';
+        let billTotal = 0;
+
+        cart.forEach(item => {
+            const lineSubtotal = item.price * item.quantity;
+            billTotal += lineSubtotal;
+
+            html += `
+                <div class="bg-slate-900 border border-slate-800 rounded-xl p-3 flex items-center justify-between text-xs">
+                    <div class="flex-1 pr-2">
+                        <div class="font-bold text-white leading-tight">${item.name}</div>
+                        <div class="text-[10px] text-slate-400 font-mono mt-0.5">${item.sku} • @ ${formatNaira(item.price)}</div>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <div class="flex items-center space-x-1 bg-slate-950 border border-slate-800 rounded-lg p-0.5">
+                            <button type="button" onclick="updateQuantity(${item.product_id}, -1)" class="w-6 h-6 rounded flex items-center justify-center hover:bg-slate-800 text-slate-300 font-bold">-</button>
+                            <span class="w-6 text-center font-bold text-white font-mono">${item.quantity}</span>
+                            <button type="button" onclick="updateQuantity(${item.product_id}, 1)" class="w-6 h-6 rounded flex items-center justify-center hover:bg-slate-800 text-slate-300 font-bold">+</button>
+                        </div>
+                        <span class="font-bold text-white font-mono w-20 text-right">${formatNaira(lineSubtotal)}</span>
+                        <button type="button" onclick="removeItem(${item.product_id})" class="text-rose-500 hover:text-rose-400 ml-1">
+                            <i data-lucide="x" class="w-3.5 h-3.5"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+        lucide.createIcons();
+        updateTotals(billTotal);
+    }
+
+    function updateTotals(subtotal) {
+        document.getElementById('checkout-total').textContent = formatNaira(subtotal);
+        document.getElementById('bill-total-badge').textContent = formatNaira(subtotal);
+
+        const cashInput = document.getElementById('split-cash');
+        const transferInput = document.getElementById('split-transfer');
+        const posInput = document.getElementById('split-pos');
+        const debtInput = document.getElementById('split-debt');
+
+        const currentSplitsSum = parseFloat(cashInput.value || 0) + parseFloat(transferInput.value || 0)
+                               + parseFloat(posInput.value || 0) + parseFloat(debtInput.value || 0);
+
+        if (currentSplitsSum === 0 && subtotal > 0) {
+            // Auto-fill cash with net-after-discount total
+            const disc = getDiscountAmount(subtotal);
+            const net = Math.max(0, subtotal - disc);
+            cashInput.value = net.toFixed(2);
+            cashAutoFilled = true;   // mark: user hasn't manually overridden this
+        }
+
+        calculateSplits();
+    }
+
+    // --- Discount helpers ---
+    let discountMode = 'flat'; // 'flat' or 'pct'
+    function setDiscountMode(mode) {
+        discountMode = mode;
+        document.getElementById('discount-mode-input').value = mode;
+        const flatBtn = document.getElementById('disc-btn-flat');
+        const pctBtn = document.getElementById('disc-btn-pct');
+        const label = document.getElementById('disc-unit-label');
+        if (mode === 'flat') {
+            flatBtn.className = 'px-2 py-0.5 rounded-md bg-violet-600 text-white transition-colors';
+            pctBtn.className  = 'px-2 py-0.5 rounded-md bg-slate-700 text-slate-300 transition-colors';
+            label.textContent = '₦';
+        } else {
+            flatBtn.className = 'px-2 py-0.5 rounded-md bg-slate-700 text-slate-300 transition-colors';
+            pctBtn.className  = 'px-2 py-0.5 rounded-md bg-violet-600 text-white transition-colors';
+            label.textContent = '%';
+        }
+        calculateSplits();
+    }
+
+    function getDiscountAmount(subtotal) {
+        const val = parseFloat(document.getElementById('discount-input').value || 0);
+        if (discountMode === 'pct') {
+            return Math.min(subtotal, (subtotal * Math.min(val, 100)) / 100);
+        }
+        return Math.min(subtotal, val);
+    }
+
+    function calculateSplits() {
+        const subtotal = cart.reduce((acc, i) => acc + (i.price * i.quantity), 0);
+        const discountAmt = getDiscountAmount(subtotal);
+        const totalBill = Math.max(0, subtotal - discountAmt);
+
+        // Update discount display
+        document.getElementById('discount-display').textContent = formatNaira(discountAmt);
+        document.getElementById('net-total-display').textContent = formatNaira(totalBill);
+        document.getElementById('checkout-total').textContent = formatNaira(totalBill);
+        document.getElementById('bill-total-badge').textContent = formatNaira(subtotal) + (discountAmt > 0 ? ' → ' + formatNaira(totalBill) : '');
+
+        const cashInput = document.getElementById('split-cash');
+
+        // If cash was auto-filled (not manually typed), keep it in sync with net total
+        // so that applying / changing a discount never causes a mismatch
+        if (cashAutoFilled) {
+            const transfer0 = parseFloat(document.getElementById('split-transfer').value || 0);
+            const pos0      = parseFloat(document.getElementById('split-pos').value || 0);
+            const debt0     = parseFloat(document.getElementById('split-debt').value || 0);
+            // Only auto-adjust cash when no other split has been manually entered
+            if (transfer0 === 0 && pos0 === 0 && debt0 === 0) {
+                cashInput.value = totalBill.toFixed(2);
+            }
+        }
+
+        const cash = parseFloat(cashInput.value || 0);
+        const transfer = parseFloat(document.getElementById('split-transfer').value || 0);
+        const pos = parseFloat(document.getElementById('split-pos').value || 0);
+        const debt = parseFloat(document.getElementById('split-debt').value || 0);
+
+        const paid = cash + transfer + pos;
+        const totalSplits = paid + debt;
+
+        document.getElementById('splits-sum-display').textContent = formatNaira(totalSplits);
+        document.getElementById('stat-paid').textContent = formatNaira(paid);
+        document.getElementById('stat-debt').textContent = formatNaira(debt);
+
+        const diff = Math.abs(totalSplits - totalBill);
+        const submitBtn = document.getElementById('submit-sale-btn');
+        const balanceMsg = document.getElementById('split-balance-msg');
+
+        // Check if full credit or high debt
+        const isFullCredit = (paid === 0 && debt > 0);
+        const isLargeDebt = (debt > 200000);
+        const managerBox = document.getElementById('manager-approval-box');
+
+        if ((isFullCredit || isLargeDebt) && userRole === 'CASHIER') {
+            managerBox.classList.remove('hidden');
+        } else {
+            managerBox.classList.add('hidden');
+        }
+
+        // Set default due date to 14 days ahead if debt > 0
+        const dueDateInput = document.getElementById('debt-due-date');
+        if (debt > 0 && !dueDateInput.value) {
+            const nextTwoWeeks = new Date();
+            nextTwoWeeks.setDate(nextTwoWeeks.getDate() + 14);
+            dueDateInput.value = nextTwoWeeks.toISOString().split('T')[0];
+        }
+
+        if (subtotal === 0) {
+            submitBtn.disabled = true;
+            balanceMsg.innerHTML = '<span class="text-slate-500">Cart is empty</span>';
+        } else if (diff < 0.01) {
+            submitBtn.disabled = false;
+            balanceMsg.innerHTML = '<span class="text-emerald-400 font-bold">✓ Split Payments Balance Matched! Ready to process.</span>';
+        } else if (totalSplits < totalBill) {
+            submitBtn.disabled = true;
+            const remaining = totalBill - totalSplits;
+            balanceMsg.innerHTML = `<span class="text-amber-400 font-medium">Split is short by ${formatNaira(remaining)}. Add to Cash, Transfer, POS or Debt.</span>`;
+        } else {
+            submitBtn.disabled = true;
+            const over = totalSplits - totalBill;
+            balanceMsg.innerHTML = `<span class="text-rose-400 font-medium">Split exceeds total by ${formatNaira(over)}. Please adjust figures.</span>`;
+        }
+    }
+
+    function setQuickPayment(type) {
+        const totalBill = cart.reduce((acc, i) => acc + (i.price * i.quantity), 0);
+        if (totalBill <= 0) return;
+
+        document.getElementById('split-cash').value = '0.00';
+        document.getElementById('split-transfer').value = '0.00';
+        document.getElementById('split-pos').value = '0.00';
+        document.getElementById('split-debt').value = '0.00';
+
+        if (type === 'cash') {
+            document.getElementById('split-cash').value = totalBill.toFixed(2);
+        } else if (type === 'transfer') {
+            document.getElementById('split-transfer').value = totalBill.toFixed(2);
+        } else if (type === 'pos') {
+            document.getElementById('split-pos').value = totalBill.toFixed(2);
+        } else if (type === 'debt') {
+            document.getElementById('split-debt').value = totalBill.toFixed(2);
+        }
+        calculateSplits();
+    }
+
+    function handleCustomerSelect(val) {
+        const nameInput = document.getElementById('cust-name');
+        const phoneInput = document.getElementById('cust-phone');
+        const addrInput = document.getElementById('cust-address');
+
+        if (val === 'walkin') {
+            nameInput.value = '';
+            phoneInput.value = '';
+            addrInput.value = '';
+        } else if (val === 'new') {
+            nameInput.value = '';
+            phoneInput.value = '';
+            addrInput.value = '';
+            nameInput.focus();
+        } else {
+            const selectEl = document.getElementById('customer-select');
+            const opt = selectEl.options[selectEl.selectedIndex];
+            nameInput.value = opt.getAttribute('data-name') || '';
+            phoneInput.value = opt.getAttribute('data-phone') || '';
+            addrInput.value = opt.getAttribute('data-address') || '';
+        }
+    }
+</script>
+{% endblock %}

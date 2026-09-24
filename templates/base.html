@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full bg-slate-950 text-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Matteo Williams Electronics | Onitsha{% endblock %}</title>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS (Play CDN) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                    },
+                    colors: {
+                        brand: {
+                            50: '#ecfdf5',
+                            100: '#d1fae5',
+                            500: '#10b981',
+                            600: '#059669',
+                            700: '#047857',
+                            900: '#064e3b',
+                            dark: '#070a12',
+                            card: '#0f172a',
+                            border: '#1e293b',
+                            surface: '#111c33',
+                            accent: '#6366f1',
+                            gold: '#f59e0b',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="/static/css/styles.css">
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="h-full flex flex-col bg-[#070a12] text-slate-100 selection:bg-indigo-500 selection:text-white">
+
+    <!-- Top Navigation Bar -->
+    {% if is_general_unlocked and user_role %}
+    <header class="bg-[#0b1120]/90 backdrop-blur-md border-b border-slate-800/80 sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                
+                <!-- Logo & Brand Info -->
+                <div class="flex items-center space-x-3">
+                    <a href="{% if user_role == 'OWNER' %}{% url 'inventory:owner_dashboard' %}{% elif user_role == 'MANAGER' %}{% url 'inventory:branch_dashboard' %}{% else %}{% url 'inventory:pos_terminal' %}{% endif %}" class="flex items-center space-x-3 group">
+                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 via-emerald-500 to-cyan-400 p-[2px] shadow-lg shadow-emerald-500/20 group-hover:scale-105 transition-transform">
+                            <div class="w-full h-full bg-[#0b1120] rounded-[10px] flex items-center justify-center font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-cyan-300">
+                                MW
+                            </div>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="font-bold text-lg tracking-tight text-white group-hover:text-emerald-400 transition-colors">Matteo Williams</span>
+                                <span class="text-[10px] uppercase tracking-wider font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Onitsha</span>
+                            </div>
+                            <p class="text-xs text-slate-400">Electronics & Solar Hub</p>
+                        </div>
+                    </a>
+
+                    <!-- Current Branch Pill -->
+                    {% if current_branch %}
+                    <div class="hidden md:flex items-center space-x-1.5 ml-4 px-3 py-1 rounded-lg bg-slate-900 border border-slate-800 text-xs text-slate-300">
+                        <i data-lucide="store" class="w-3.5 h-3.5 text-cyan-400"></i>
+                        <span class="font-medium text-white">{{ current_branch.name }}</span>
+                        <span class="text-[10px] font-mono text-slate-500">({{ current_branch.code }})</span>
+                    </div>
+                    {% elif user_role == 'OWNER' %}
+                    <div class="hidden md:flex items-center space-x-1.5 ml-4 px-3 py-1 rounded-lg bg-indigo-950/60 border border-indigo-800/50 text-xs text-indigo-300">
+                        <i data-lucide="network" class="w-3.5 h-3.5 text-indigo-400"></i>
+                        <span class="font-semibold">All Onitsha Branches (Central Command)</span>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <!-- Center Navigation Links -->
+                <nav class="hidden lg:flex items-center space-x-1">
+                    <!-- POS Terminal Button -->
+                    <a href="{% url 'inventory:pos_terminal' %}" class="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if '/pos/' in request.path %}bg-emerald-500/15 text-emerald-400 border border-emerald-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+                        <i data-lucide="calculator" class="w-4 h-4"></i>
+                        <span>POS Terminal</span>
+                    </a>
+
+                    <!-- Debtors Button (Prominent & High Priority) -->
+                    <a href="{% url 'inventory:debtors_list' %}" class="flex items-center space-x-2 px-3.5 py-2 rounded-lg text-sm font-semibold transition-all relative group {% if '/debtors/' in request.path %}bg-amber-500/20 text-amber-300 border border-amber-500/40{% else %}text-amber-400/90 hover:text-amber-300 hover:bg-amber-500/10 border border-amber-500/20{% endif %}">
+                        <i data-lucide="badge-dollar-sign" class="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform"></i>
+                        <span>Debtors</span>
+                        <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                    </a>
+
+                    <!-- Branch Stock (Manager & Owner) -->
+                    {% if user_role == 'MANAGER' or user_role == 'OWNER' %}
+                    <a href="{% url 'inventory:branch_stock' %}" class="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if '/stock/' in request.path %}bg-indigo-500/15 text-indigo-400 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+                        <i data-lucide="boxes" class="w-4 h-4"></i>
+                        <span>Inventory Stock</span>
+                    </a>
+
+                    <!-- Expenses & Damage Log (Manager & Owner) -->
+                    <a href="{% url 'inventory:expense_list' %}" class="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if '/expenses/' in request.path %}bg-rose-500/15 text-rose-400 border border-rose-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+                        <i data-lucide="trending-down" class="w-4 h-4"></i>
+                        <span>Expenses</span>
+                    </a>
+                    {% endif %}
+
+
+                    <!-- Branch Dashboard (Manager) -->
+                    {% if user_role == 'MANAGER' %}
+                    <a href="{% url 'inventory:branch_dashboard' %}" class="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if '/branch/dashboard/' in request.path %}bg-indigo-500/15 text-indigo-400 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+                        <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
+                        <span>Manager Hub</span>
+                    </a>
+                    {% endif %}
+
+                    <!-- Owner Command (Owner) -->
+                    {% if user_role == 'OWNER' %}
+                    <a href="{% url 'inventory:owner_dashboard' %}" class="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if '/owner/dashboard/' in request.path %}bg-indigo-500/15 text-indigo-400 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+                        <i data-lucide="shield" class="w-4 h-4"></i>
+                        <span>Owner Command</span>
+                    </a>
+                    <a href="{% url 'inventory:owner_branches' %}" class="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if '/owner/branches/' in request.path %}bg-indigo-500/15 text-indigo-400 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+                        <i data-lucide="building-2" class="w-4 h-4"></i>
+                        <span>Branches</span>
+                    </a>
+                    <a href="{% url 'inventory:owner_audit_logs' %}" class="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all {% if '/owner/audit/' in request.path %}bg-indigo-500/15 text-indigo-400 border border-indigo-500/30{% else %}text-slate-300 hover:text-white hover:bg-slate-800/60{% endif %}">
+                        <i data-lucide="file-clock" class="w-4 h-4"></i>
+                        <span>Audit Trail</span>
+                    </a>
+                    {% endif %}
+
+                    <!-- Role Matrix Guide -->
+                    <a href="{% url 'inventory:role_matrix' %}" class="flex items-center space-x-1 px-2.5 py-1.5 rounded-lg text-xs font-medium text-slate-400 hover:text-slate-200 hover:bg-slate-800/40">
+                        <i data-lucide="help-circle" class="w-3.5 h-3.5"></i>
+                        <span>Boundaries</span>
+                    </a>
+                </nav>
+
+                <!-- Right Side: Role Badge, Time, and Logout -->
+                <div class="flex items-center space-x-3">
+                    <!-- Live Time (WAT) -->
+                    <div class="hidden sm:flex flex-col text-right pr-2 border-r border-slate-800 font-mono-numbers">
+                        <span class="text-xs font-semibold text-slate-200" id="live-clock">--:--:--</span>
+                        <span class="text-[10px] text-slate-500">WAT (Onitsha)</span>
+                    </div>
+
+                    <!-- User Role Badge -->
+                    <div class="flex items-center space-x-2 px-3 py-1.5 rounded-full {% if user_role == 'OWNER' %}bg-gradient-to-r from-indigo-900/60 to-purple-900/60 border border-indigo-500/40 text-indigo-300{% elif user_role == 'MANAGER' %}bg-emerald-950/60 border border-emerald-500/40 text-emerald-300{% else %}bg-cyan-950/60 border border-cyan-500/40 text-cyan-300{% endif %}">
+                        <span class="w-2 h-2 rounded-full {% if user_role == 'OWNER' %}bg-purple-400{% elif user_role == 'MANAGER' %}bg-emerald-400{% else %}bg-cyan-400{% endif %} animate-ping"></span>
+                        <span class="text-xs font-bold uppercase tracking-wider">{{ user_role }}</span>
+                        {% if actor_name %}
+                        <span class="text-xs text-slate-400 hidden xl:inline">| {{ actor_name }}</span>
+                        {% endif %}
+                    </div>
+
+                    <!-- Switch Hub or Logout Dropdown -->
+                    <div class="flex items-center space-x-1">
+                        <a href="{% url 'inventory:portal_hub' %}" title="Switch Branch or Role" class="p-2 rounded-lg bg-slate-900 text-slate-400 hover:text-white hover:bg-slate-800 transition-colors border border-slate-800">
+                            <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                        </a>
+                        <a href="{% url 'inventory:logout' %}" title="Exit Session" class="p-2 rounded-lg bg-slate-900 text-rose-400 hover:text-white hover:bg-rose-600 transition-colors border border-slate-800">
+                            <i data-lucide="log-out" class="w-4 h-4"></i>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Strip -->
+        <div class="lg:hidden border-t border-slate-800/80 bg-slate-950/90 px-4 py-2 flex items-center justify-around text-xs">
+            <a href="{% url 'inventory:pos_terminal' %}" class="flex flex-col items-center py-1 text-slate-300 hover:text-emerald-400">
+                <i data-lucide="calculator" class="w-4 h-4 mb-0.5"></i>
+                <span>POS</span>
+            </a>
+            <a href="{% url 'inventory:debtors_list' %}" class="flex flex-col items-center py-1 text-amber-400 font-semibold">
+                <i data-lucide="badge-dollar-sign" class="w-4 h-4 mb-0.5"></i>
+                <span>Debtors</span>
+            </a>
+            {% if user_role == 'MANAGER' %}
+            <a href="{% url 'inventory:branch_dashboard' %}" class="flex flex-col items-center py-1 text-slate-300 hover:text-indigo-400">
+                <i data-lucide="layout-dashboard" class="w-4 h-4 mb-0.5"></i>
+                <span>Manager</span>
+            </a>
+            {% endif %}
+            {% if user_role == 'OWNER' %}
+            <a href="{% url 'inventory:owner_dashboard' %}" class="flex flex-col items-center py-1 text-indigo-400 font-semibold">
+                <i data-lucide="shield" class="w-4 h-4 mb-0.5"></i>
+                <span>Owner</span>
+            </a>
+            {% endif %}
+            <a href="{% url 'inventory:role_matrix' %}" class="flex flex-col items-center py-1 text-slate-400">
+                <i data-lucide="shield-alert" class="w-4 h-4 mb-0.5"></i>
+                <span>Rules</span>
+            </a>
+        </div>
+    </header>
+    {% endif %}
+
+    <!-- Alert / Toast Messages -->
+    {% if messages %}
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4 w-full z-30">
+        {% for message in messages %}
+        <div class="mb-3 p-4 rounded-xl flex items-center justify-between border backdrop-blur-md shadow-lg transition-all {% if message.tags == 'error' %}bg-rose-950/80 border-rose-600/50 text-rose-200{% elif message.tags == 'success' %}bg-emerald-950/80 border-emerald-600/50 text-emerald-200{% elif message.tags == 'warning' %}bg-amber-950/80 border-amber-600/50 text-amber-200{% else %}bg-indigo-950/80 border-indigo-600/50 text-indigo-200{% endif %}">
+            <div class="flex items-center space-x-3">
+                {% if message.tags == 'error' %}
+                <i data-lucide="alert-octagon" class="w-5 h-5 text-rose-400 shrink-0"></i>
+                {% elif message.tags == 'success' %}
+                <i data-lucide="check-circle-2" class="w-5 h-5 text-emerald-400 shrink-0"></i>
+                {% elif message.tags == 'warning' %}
+                <i data-lucide="alert-triangle" class="w-5 h-5 text-amber-400 shrink-0"></i>
+                {% else %}
+                <i data-lucide="info" class="w-5 h-5 text-indigo-400 shrink-0"></i>
+                {% endif %}
+                <span class="text-sm font-medium">{{ message }}</span>
+            </div>
+            <button onclick="this.parentElement.remove()" class="text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-4 h-4"></i>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Main Content Area -->
+    <main class="flex-1 flex flex-col">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-[#080d19] border-t border-slate-800/60 py-4 text-xs text-slate-500 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div class="flex items-center space-x-2">
+                <span class="font-semibold text-slate-400">Matteo Williams Electronics Hub</span>
+                <span>•</span>
+                <span>Onitsha (Main Market • Emeka Offor • Iweka Road)</span>
+            </div>
+            <div class="flex items-center space-x-4">
+                <span>Multi-Branch POS & Split Payment System</span>
+                <span>•</span>
+                <span class="text-emerald-500 font-mono">Secured & Rate Limited</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Initialize Lucide Icons & Live Clock -->
+    <script>
+        lucide.createIcons();
+
+        function updateClock() {
+            const clockEl = document.getElementById('live-clock');
+            if (!clockEl) return;
+            const now = new Date();
+            // Format time for West Africa Time (WAT: UTC+1)
+            const options = { 
+                timeZone: 'Africa/Lagos', 
+                hour12: true, 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit' 
+            };
+            clockEl.textContent = now.toLocaleTimeString('en-US', options);
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+    </script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

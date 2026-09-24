@@ -1,0 +1,170 @@
+{% extends "base.html" %}
+
+{% block title %}Inventory & Restocking | {{ branch.name }} | Matteo Williams{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full space-y-6">
+
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+            <a href="{% url 'inventory:branch_dashboard' %}" class="inline-flex items-center space-x-1.5 text-xs font-semibold text-slate-400 hover:text-white mb-2 transition-colors">
+                <i data-lucide="arrow-left" class="w-4 h-4"></i>
+                <span>Back to Branch Dashboard</span>
+            </a>
+            <h1 class="text-2xl font-black text-white tracking-tight">Branch Inventory Stock & Consignments</h1>
+            <p class="text-xs text-slate-400 mt-1">Manage stock counts for electronics at {{ branch.name }} ({{ branch.code }}).</p>
+        </div>
+
+        <button onclick="document.getElementById('restock-modal').classList.remove('hidden')" 
+            class="px-4 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-600/20 transition-all flex items-center space-x-2 self-start sm:self-auto">
+            <i data-lucide="package-plus" class="w-4 h-4"></i>
+            <span>Receive New Consignment</span>
+        </button>
+    </div>
+
+    <!-- Stock Table -->
+    <div class="bg-slate-900/90 border border-slate-800 rounded-3xl shadow-xl overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs">
+                <thead class="bg-slate-950 text-slate-400 uppercase text-[10px] font-bold border-b border-slate-800">
+                    <tr>
+                        <th class="py-4 px-5">Product Name & Category</th>
+                        <th class="py-4 px-5">SKU / Brand</th>
+                        {% if user_role == 'OWNER' %}
+                        <th class="py-4 px-5 text-right">Cost Price (₦)</th>
+                        {% endif %}
+                        <th class="py-4 px-5 text-right">Selling Price (₦)</th>
+                        <th class="py-4 px-5 text-center">Stock Level</th>
+                        <th class="py-4 px-5 text-right">Quick Restock</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800">
+                    {% for st in stocks %}
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="py-4 px-5">
+                            <span class="font-bold text-white text-sm block">{{ st.product.name }}</span>
+                            <span class="text-[10px] text-indigo-400 font-semibold">{{ st.product.category.name }}</span>
+                        </td>
+
+                        <td class="py-4 px-5 font-mono">
+                            <span class="text-slate-300 font-bold">{{ st.product.sku }}</span>
+                            <span class="block text-[11px] text-slate-500 font-sans">{{ st.product.brand }}</span>
+                        </td>
+
+                        {% if user_role == 'OWNER' %}
+                        <td class="py-4 px-5 text-right font-mono text-slate-400">
+                            ₦{{ st.product.cost_price|floatformat:2 }}
+                        </td>
+                        {% endif %}
+
+                        <td class="py-4 px-5 text-right font-mono font-bold text-white">
+                            ₦{{ st.product.selling_price|floatformat:2 }}
+                        </td>
+
+                        <td class="py-4 px-5 text-center">
+                            {% if st.quantity > 5 %}
+                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold font-mono bg-emerald-950 text-emerald-300 border border-emerald-800">
+                                {{ st.quantity }} {{ st.product.unit }}
+                            </span>
+                            {% elif st.quantity > 0 %}
+                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold font-mono bg-amber-950 text-amber-300 border border-amber-800 animate-pulse">
+                                {{ st.quantity }} {{ st.product.unit }} (Low)
+                            </span>
+                            {% else %}
+                            <span class="px-2.5 py-1 rounded-full text-[11px] font-bold font-mono bg-rose-950 text-rose-300 border border-rose-800">
+                                0 {{ st.product.unit }} (Out)
+                            </span>
+                            {% endif %}
+                        </td>
+
+                        <td class="py-4 px-5 text-right">
+                            <button onclick="openQuickRestock({{ st.product.id }}, '{{ st.product.name|escapejs }}', {{ st.quantity }}, '{{ st.product.unit|escapejs }}')" 
+                                class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-emerald-600 hover:text-slate-950 text-slate-300 font-semibold text-xs transition-all border border-slate-700">
+                                + Restock
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<!-- Restock Consignment Modal -->
+<div id="restock-modal" class="hidden fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-y-auto">
+    <div class="flex min-h-full items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-4 relative my-6">
+        <button onclick="document.getElementById('restock-modal').classList.add('hidden')" class="absolute top-5 right-5 text-slate-400 hover:text-white">
+            <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+
+        <div class="flex items-center space-x-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+            <i data-lucide="package-plus" class="w-4 h-4"></i>
+            <span>Inventory Restock</span>
+        </div>
+        <h2 class="text-xl font-bold text-white" id="modal-product-title">Restock Consignment</h2>
+
+        <form method="POST" class="space-y-4 pt-2">
+            {% csrf_token %}
+            <input type="hidden" name="product_id" id="modal-product-id">
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1.5">Select Electronics Product</label>
+                <select id="modal-product-select" onchange="syncSelect(this.value)" class="w-full px-3 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white focus:outline-none focus:ring-1 focus:ring-emerald-500">
+                    {% for st in stocks %}
+                    <option value="{{ st.product.id }}" data-name="{{ st.product.name }}" data-unit="{{ st.product.unit }}" data-qty="{{ st.quantity }}">
+                        {{ st.product.name }} (Current: {{ st.quantity }} {{ st.product.unit }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1.5">Quantity to Add (<span id="modal-unit-label">pcs</span>)</label>
+                <input type="number" name="quantity_to_add" min="1" value="5" required
+                    class="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-sm font-bold font-mono text-white focus:outline-none focus:ring-1 focus:ring-emerald-500 text-center">
+            </div>
+
+            <div>
+                <label class="block text-xs font-semibold text-slate-300 mb-1.5">Consignment / Delivery Note</label>
+                <input type="text" name="restock_note" placeholder="e.g. Lagos container arrival / Wholesaler delivery"
+                    class="w-full px-4 py-2.5 bg-slate-950 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-600 focus:outline-none">
+            </div>
+
+            <button type="submit" 
+                class="w-full py-3.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-bold text-sm rounded-xl shadow-lg shadow-emerald-600/20 transition-all flex items-center justify-center space-x-2 mt-4">
+                <i data-lucide="check" class="w-4 h-4"></i>
+                <span>Confirm Stock Increment & Log Audit</span>
+            </button>
+        </form>
+    </div>
+    </div>
+</div>
+
+<script>
+    function openQuickRestock(productId, name, currentQty, unit) {
+        document.getElementById('modal-product-id').value = productId;
+        document.getElementById('modal-product-title').textContent = 'Restock: ' + name;
+        document.getElementById('modal-unit-label').textContent = unit;
+        document.getElementById('modal-product-select').value = productId;
+        document.getElementById('restock-modal').classList.remove('hidden');
+    }
+
+    function syncSelect(val) {
+        const select = document.getElementById('modal-product-select');
+        const opt = select.options[select.selectedIndex];
+        document.getElementById('modal-product-id').value = val;
+        document.getElementById('modal-product-title').textContent = 'Restock: ' + opt.getAttribute('data-name');
+        document.getElementById('modal-unit-label').textContent = opt.getAttribute('data-unit');
+    }
+
+    // Set initial select value
+    const firstOption = document.getElementById('modal-product-select').options[0];
+    if (firstOption) {
+        document.getElementById('modal-product-id').value = firstOption.value;
+        document.getElementById('modal-unit-label').textContent = firstOption.getAttribute('data-unit');
+    }
+</script>
+{% endblock %}
