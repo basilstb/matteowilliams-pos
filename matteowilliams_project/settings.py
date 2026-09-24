@@ -22,17 +22,22 @@ SECRET_KEY = os.environ.get(
 
 DEBUG = os.environ.get('DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = os.environ.get(
+ALLOWED_HOSTS = [h.strip() for h in os.environ.get(
     'ALLOWED_HOSTS',
-    'matteowilliams.org,www.matteowilliams.org,.up.railway.app,localhost,127.0.0.1'
-).split(',')
+    'matteowilliams.org,www.matteowilliams.org,mateowilliams.org,www.mateowilliams.org,.up.railway.app,localhost,127.0.0.1'
+).split(',') if h.strip()]
 
 # Required for POST requests (forms, PIN login, sales) to work on custom domains
+csrf_env = os.environ.get('CSRF_TRUSTED_ORIGINS', '')
 CSRF_TRUSTED_ORIGINS = [
     'https://matteowilliams.org',
     'https://www.matteowilliams.org',
+    'https://mateowilliams.org',
+    'https://www.mateowilliams.org',
     'https://*.up.railway.app',
 ]
+if csrf_env:
+    CSRF_TRUSTED_ORIGINS.extend([o.strip() for o in csrf_env.split(',') if o.strip()])
 
 # ─── Application definition ───────────────────────────────────────────────────
 INSTALLED_APPS = [
